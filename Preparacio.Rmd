@@ -1,0 +1,245 @@
+---
+title: "Versio_02"
+author: "Aleix Martínez Bages & Ignasi Vilarasau Antolín"
+date: "22/5/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# 0 Càrrega de dades
+
+https://rstudio-pubs-static.s3.amazonaws.com/295492_946082632d814e34b81c61156836df4b.html
+
+```{r}
+library(readr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+data <- read_csv("shot_logs.csv")
+```
+
+
+## Descripció variables:
+  GAME_ID: Identificador del partit
+  
+  MATCHUP: Data del partit i noms dels equips local vs visitant
+  
+  LOCATION: ¿Si es va jugar a casa o fora? A = away, H = home
+  
+  W: Si l'equip local guanya o perd, W = win, L = lose
+  
+  FINAL_MARGIN: Diferència de punts del resultat final.
+  
+  SHOT_NUMBER: Quants llençaments portava el moment de fer l'acció.
+  
+  PERIOD: Periode del partit en el que s'efectua el llençament.
+  
+  GAME_CLOCK: Temps que queda per acabar al moment del tir.
+  
+  SHOT_CLOCK: Segon de la posseció de la jugada (max 24 segons)
+  
+  DRIBBLES: Dribblings fets pel jugador amb la pilota
+  
+  TOUCH_TIME: Temps que el jugador ha tingut la pilota a les mans
+  
+  SHOT_DIST: Distància desde la qual llença el jugador
+  
+  PTS_TYPE: Tipo de llençament si de 2 o 3 punts (triple)
+  
+  SHOT_RESULT: Si ha encertat (made) o fallat (missed) el llençament 
+  
+  CLOSEST_DEFENDER: Nom del defensor més proper
+  
+  CLOSEST_DEFENDER_PLAYER_ID: Id del defensor més proper
+  
+  CLOSE_DEF_DIST: Distància amb el defensa més proper
+  
+  FGM: Variable binària (0,1) indicant si ha encertat o falltat el tir
+  
+  PTS: Punts aconseguits amb el llençament
+  
+  player_name: Nom del jugador que efectua el tir
+  
+  player_id: ID del jugador que efectua el tir
+ 
+
+# 1 Neteja de dades
+
+## Factoritzar atributs categòrics
+## Factorizació atributs
+```{r}
+#data$LOCATION <- as.factor(data$LOCATION)
+#data$W  <- as.factor(data$W)
+#data$PERIOD <- as.factor(data$PERIOD)
+#data$PTS_TYPE <- as.factor(data$PTS_TYPE)
+#data$SHOT_RESULT <- as.factor(data$SHOT_RESULT)
+#data$FGM <- as.factor(data$FGM)
+```
+
+
+## Neteja del SHOT_CLOCK
+```{r}
+sum(is.na(data))
+```
+En SHOT_CLOCK és l'únic camp on tenim presència de valors nuls.
+
+####Eliminem els NA del SHOT_CLOCK
+Hem observat que la majoria de NA del SHOT_CLOCK apareixen quan el temps del periode és inferior als 24 segons de poseció que té permès l'equip. Per això, assignarem al SHOT_CLOCK els segons del temps de joc restant (GAME_CLOCK_SEC).
+
+Extreiem els minuts i segons del rellotge de partit.
+```{r}
+strp_GC <- strptime(data$GAME_CLOCK, '%M:%S')
+data$GAME_CLOCK_MIN <- as.numeric(strp_GC$min)
+data$GAME_CLOCK_SEC <- as.numeric(strp_GC$sec)
+```
+
+Posem el temps de partit com a SHOT_CLOCK per aquells valors NA, ja que hem vist, quan queden menys de 24 segons del període, el SHOT_CLOCK no té utilitat i per això apareix com a NA:
+```{r}
+data$SHOT_CLOCK <- ifelse(is.na(data$SHOT_CLOCK),  data$GAME_CLOCK_SEC,data$SHOT_CLOCK)
+```
+
+
+#### Decidir que fer amb els valors quan SHOT_CLOCK > 24
+El temps que té un equip per atacar és de 24 segons. Per tant, tot valor del SHOT_CLOCK que superi a 24 és *erroni*. Aquests valors erronis del SHOT_CLOCK els tractem amb una constant, i aquesta és el temps màxim per possessió (24).
+```{r}
+data$SHOT_CLOCK[data$SHOT_CLOCK > 24] <- 24
+```
+
+##Neteja del TOUCH_TIME
+
+### El primer pas serà la correcció d'atributs
+Hem observat la presència de TOUCH_TIME negatiu, cosa que no té sentit, ja que el temps de possessió ha de ser sempre positiu.
+```{r}
+sum(data$TOUCH_TIME <0)
+```
+Per solucionar aquest 312 registres incorregtes agafarem el valor absolut perquè considerem que és fruit d'una errada.
+```{r}
+data$TOUCH_TIME <- abs(data$TOUCH_TIME)
+```
+
+## Categorització distàncies
+A continuació categoritzarem els atributs numèrics corresponents a la distància de llençament i la distancia del defensor.
+### Conversió distàncies
+El primer pas es convertir les distàncies a sistema mètric. Les nostres dades estan en el sistema nordamericà on 1 peu son 0.308 metres.
+```{r}
+feet_to_metre <- 0.3048
+data$SHOT_DIST <- feet_to_metre*data$SHOT_DIST
+data$CLOSE_DEF_DIST <- feet_to_metre*data$CLOSE_DEF_DIST
+```
+
+### Comprovació distàncies
+La zona de triples comença a una distància de 7.3 metres, per tant no hi ha d'haver tirs de dos de distàncies superiors. De la mateixa manera, la distància mínima a canasta és de 6.7metres i no hi ha d'haver tirs de 3 a menor distància.
+
+```{r}
+data$PTS_TYPE[df$SHOT_DIST > 7.3] <- 3
+data$PTS_TYPE[df$SHOT_DIST < 6.7] <- 2
+```
+
+### Categoritzar distància de llençament.
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3737873/
+Seguint amb l'article mencionat on aprecia canvis significatius en la precisió en funció de la distància. Es detecta una disminució de més d'un 20% d'eficàcia (p<0.05) en el canvi de 2.8m a 6.4m. Per això les nostres categories són 2.8m serà *Close Distance(C)*, 4.6m *Medium Distance (M)*, i 6.4m per *Far Distance (F)*.
+```{r}
+data$SHOT_DIST_C <- "M"
+data$SHOT_DIST_C[data$SHOT_DIST < 2.8] <- "C" 
+data$SHOT_DIST_C[data$SHOT_DIST > 6.4] <- "F"
+data$SHOT_DIST_C <- as.factor(data$SHOT_DIST_C)
+```
+
+### Categoritzar distància defensor.
+Idem pas anterior
+
+```{r}
+data$CLOSE_DEF_DIST_C <- "M"
+data$CLOSE_DEF_DIST_C[data$CLOSE_DEF_DIST < 0.5] <- "C"
+data$CLOSE_DEF_DIST_C[data$CLOSE_DEF_DIST > 1] <- "F"
+data$CLOSE_DEF_DIST_C <- as.factor(data$CLOSE_DEF_DIST_C)
+```
+
+## Creació de noves variables
+
+###Time Out
+Identifiquem si es juga a la prorroga
+```{r}
+data$OT <- ifelse(data$PERIOD > 4, 1, 0)
+```
+
+
+###Clutch/Handicap
+Considerem Handicap aquelles situacions de pressió, estàn relacionades amb els finals de partits quan el marcador està apretat, volem trobat els llençaments on els jugadors es troben a més pressió.
+Les variables que poden influir seran: GAME_CLOCK, FINAL_MARGIN<< relacionat amb PERIOD>=4 i GAME_CLOCK petit.
+```{r}
+data$CLUTCH <- ifelse(as.integer(data$PERIOD) >= 4 & data$GAME_CLOCK_MIN == 0  & abs(data$FINAL_MARGIN) < 6 ,1,0)
+```
+
+###Attack Type
+Classifiquem el tipus d'atac segons el temps de duració, si ha durat entre 0 i 12 segons és un atac curt, o jugada curta. Si està entre els 12 i 24 segons és una atac llarg. 
+```{r}
+data$ATTACK_TYPE <- ifelse(data$SHOT_CLOCK < 12, "Short", "Long")
+```
+
+# Guardar
+Guardaem el DataSet preparat amb les columnes que volem
+```{r}
+rows <- c("GAME_ID", "player_id","PERIOD","OT","ATTACK_TYPE",
+          "SHOT_DIST","SHOT_DIST_C","CLOSE_DEF_DIST","CLOSE_DEF_DIST_C",
+          "PTS_TYPE","SHOT_RESULT","CLUTCH")
+df_nba <- data[, rows]
+write.csv(df_nba, file = "data_nba.csv")
+```
+##Càlcul d'efectivitat per jugador i partit
+- TI: Tirs Intentats
+- TR: Tirs Realitzats
+- TF: Tirs Fallats
+
+Per a obtenir el DataFrame amb la pressició creem un dataset dummy agrupat per les claus identificadores de cada jugador. En dos dataframes diferents calculem el total de llencements efectuats correctament i els fallats. També computem la distància promig de llençament i la distància promig a la qual es trobava el defensor. Posteriorment els unim en un dataframe conjunt i calculem els tirs intentats com la suma dels anteriors.
+```{r}
+df <-data %>% group_by(GAME_ID, player_id,OT,PERIOD, FGM)
+#Tirs Realitzats i Fallats
+df_tirs <- inner_join(df %>% filter(FGM ==1) %>% summarise(TR = n(),
+                                                               Dist_R = mean(SHOT_DIST),
+                                                               Def_R = mean(CLOSE_DEF_DIST)),
+                      df %>% filter(FGM ==0) %>% summarise(TF = n(),
+                                                               Dist_F = mean(SHOT_DIST),
+                                                               Def_F = mean(CLOSE_DEF_DIST)),
+                      by = c("GAME_ID", "player_id","OT","PERIOD"), copy = TRUE)
+#Tirs Intentats
+df_tirs$TI <- df_tirs$TR+df_tirs$TF
+```
+
+Per acabar, en un altre DataFrame calculem el nombre de punts que ha fet el jugador en qüestió, netejem els camps que no ens interessen i calculem la pressisió que ha tingut el jugador en aquell partit.
+```{r}
+
+#Punts
+df_tirs <- inner_join(df_tirs,
+                      df  %>% filter(FGM ==1) %>% summarise(PTS = sum(PTS)))
+
+df_tirs <- subset(df_tirs, select = -c(FGM.x, FGM.y, FGM)) 
+#Pressissió
+df_tirs$PRES <- round(100*df_tirs$TR/df_tirs$TI,2)
+```
+
+####MVP
+Amb aquesta variable denotem el jugador que ha tingut un partit estel·lar. Que ha fet més de 20 punts amb una presissió superior al 60%. 
+```{r}
+df_tirs$MVP <- ifelse(df_tirs$PTS > 20 & df_tirs$PRES > 60, 1, 0)
+```
+
+### Preparacció datasets
+Guardem el datasets
+```{r}
+df_tirs$GAME_ID <- NULL
+df_tirs$player_id <- NULL
+write.csv(df_tirs, file = "data_tirs.csv")
+```
+
+```{r}
+rows <- c("LOCATION","W","FINAL_MARGIN","PERIOD","OT","TOUCH_TIME",
+          "SHOT_DIST","SHOT_DIST_C","PTS_TYPE","SHOT_RESULT",
+          "CLOSE_DEF_DIST","CLOSE_DEF_DIST_C","CLUTCH")
+df_nba <- data[, rows]
+write.csv(df_nba, file = "data_nba.csv")
+```
+

@@ -1,0 +1,119 @@
+---
+title: "Analisis_NBA"
+author: "Aleix Martínez Bages i Ignasi Vilarasau Antolin"
+date: "8/6/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Importar llibreries
+```{r}
+library(readr)
+library(magrittr)
+library(ggplot2)
+library(dplyr)
+```
+
+
+# 0 Importar conjunt de dades
+```{r}
+df<- read_csv("data_nba.csv")
+df$X1 <- NULL
+df$OT <- as.factor(df$OT)
+df$ATTACK_TYPE <- as.factor(df$ATTACK_TYPE)
+df$CLOSE_DEF_DIST_C <- factor(df$CLOSE_DEF_DIST_C, levels = c("C","M","F"))
+df$PTS_TYPE <- as.factor(df$PTS_TYPE)
+df$CLUTCH<- as.factor(df$CLUTCH)
+df$SHOT_RESULT <- as.factor(df$SHOT_RESULT)
+#df$PERIOD <- as.factor(df$PERIOD)
+```
+
+
+# 1 L'efecte de la distància en el llençament
+Volem veure com afecta la distància de llençament en la precissió. En primer lloc calcularem la pressisió de cada jugador per partit, segons la distància de llençament.
+```{r}
+data_sdc <- df %>% group_by(GAME_ID, SHOT_DIST_C, SHOT_RESULT)
+
+df_sdc <- inner_join(data_sdc %>% filter(SHOT_RESULT == "made") %>% 
+                       summarise(TR = n()),
+                      data_sdc %>% filter(SHOT_RESULT == "missed") %>% 
+                       summarise(TF = n()),
+                      by = c("GAME_ID","SHOT_DIST_C"), copy = TRUE)
+
+df_sdc <- subset(df_sdc, select = -c(SHOT_RESULT.x, SHOT_RESULT.y))
+df_sdc$SHOT_DIST_C <- factor(df_sdc$SHOT_DIST_C, levels = c("C","M","F"))
+df_sdc$TI <- df_sdc$TR + df_sdc$TF
+df_sdc$PRES <- 100*df_sdc$TR/df_sdc$TI
+```
+
+## Representació Dades
+```{r}
+ggplot(df_sdc, aes(x = SHOT_DIST_C, y = PRES ,fill = SHOT_DIST_C)) +
+  geom_boxplot()+ggtitle("Precission by Shot Dist")
+
+mu <- plyr::ddply(df_sdc, "SHOT_DIST_C", summarise, pres.mean=mean(PRES), pres.sd =sd(PRES) )
+
+ggplot(df_sdc,aes(x=PRES,group=SHOT_DIST_C, fill=SHOT_DIST_C))+
+  geom_histogram(position="identity",
+                 aes(y=..density..),
+                 alpha=0.75,
+                 binwidth = 5) + 
+  xlab("% Encert")+ylab("Densitat")+ggtitle("Histogram SHOT_DIST_C BY PRECISION")
+mu
+```
+
+## Comprovació normalitat.
+Ens volem centrar en comparar baixada de pressisió amb l'augment de la distància. Primer comprovarem si cada atribut segueix una distribució normal. Els Q-Q Plots indiquen que podem tenir aquestes distribucions normals.
+```{r}
+par(mfrow=c(1,3))
+qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"], main = "CLOSE")
+qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"])
+
+qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"], main = "MEDIUM")
+qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"])
+
+qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"], main = "FAR")
+qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"])
+```
+
+Amb els Q-Q Plots estem molt convençuts de la normalitat del nostre conjunt de dades, però per si acas realitzarem una comprovació mitjanssant el Test de Kolmogorov-Smirnov.
+
+```{r}
+ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"], y = "pnorm", alternative = "two.sided")
+
+ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"], y = "pnorm", alternative = "two.sided")
+
+ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"], y = "pnorm", alternative = "two.sided")
+```
+
+## Comprovació Hipòtesis
+ A continuació farem el test de Wilcoxon per determinar si hi ha diferències en l'efectivitat de llençament segons la distància.
+```{r}
+wilcox.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"],
+            y = df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"])
+```
+
+# 2 Predicció llençament
+```{r}
+df$CLUTCH_C <- relevel(df$CLUTCH, ref = "0")
+df$ATTACK_TYPE_C <- relevel(df$ATTACK_TYPE, ref = "Long")
+model <- glm(SHOT_RESULT ~ SHOT_DIST + CLUTCH_C + ATTACK_TYPE_C,
+            data = df,
+            family = "binomial")
+```
+
+
+## Fem prediccions
+```{r}
+df$SHOT_RESULT_pred <- predict.glm(model, df, type = "response")
+```
+
+```{r}
+library(pROC)
+roc_city <- roc(response = df$SHOT_RESULT, 
+                predictor = df$SHOT_RESULT_pred, plot = TRUE)
+```
+
