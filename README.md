@@ -9,11 +9,38 @@ En concret en aquesta pràctica ens hem centrat en les fases de preprocessament 
 
 ## Descripció
 
+En aquest projecte treballarem sobre un conjunt de dades extret de Kaggle[^1] que conté informació relativa a tots els llençaments fets en partits de la NBA al llarg de la temporada 2014-2015. L'objectiu de l'estudi és determinar els factors que influencien l'encert del llençament, com la distància a la canasta o el temps de jocs. La finalitat és coneixer en quines situacions tenim més probabilitats d'anotar coneixer les característiques del moment.
+
+[^1]:enllaç: https://www.kaggle.com/dansbecker/nba-shot-logs
+
+El dataset conté 128.060 observacions de 28 variables diferents, que les presentem a continuació:
+
+  * **GAME_ID**: Identificador del partit
+  * **MATCHUP**: Data del partit i noms dels equips local vs visitant
+  * **LOCATION**: ¿Si es va jugar a casa o fora? A = away, H = home
+  * **W**: Si l'equip local guanya o perd, W = win, L = lose
+  * **FINAL_MARGIN**: Diferència de punts del resultat final.
+  * **SHOT_NUMBER**: Quants llençaments portava el moment de fer l'acció.
+  * **PERIOD**: Periode del partit en el que s'efectua el llençament.
+  * **GAME_CLOCK**: Temps que queda per acabar al moment del tir.
+  * **SHOT_CLOCK**: Segon de la posseció de la jugada (max 24 segons)
+  * **DRIBBLES**: Dribblings fets pel jugador amb la pilota
+  * **TOUCH_TIME**: Temps que el jugador ha tingut la pilota a les mans
+  * **SHOT_DIST**: Distància desde la qual llença el jugador
+  * **PTS_TYPE**: Tipo de llençament si de 2 o 3 punts (triple)
+  * **SHOT_RESULT**: Si ha encertat (made) o fallat (missed) el llençament 
+  * **CLOSEST_DEFENDER**: Nom del defensor més proper
+  * **CLOSEST_DEFENDER_PLAYER_ID**: Id del defensor més proper
+  * **CLOSE_DEF_DIST**: Distància amb el defensa més proper
+  * **FGM**: Variable binària (0,1) indicant si ha encertat o falltat el tir
+  * **PTS**: Punts aconseguits amb el llençament
+  * **player_name**: Nom del jugador que efectua el tir
+  * **player_id:** ID del jugador que efectua el tir
 
 ## Fitxers de codi utilitzat per realitzar el projecte:
 
-* **XXX:** 
-* **YYY:** 
+* **Descripció:** 
+* **Anàlisi:** 
 
 ## Bibliografia:
 
