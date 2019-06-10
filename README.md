@@ -43,8 +43,12 @@ El dataset conté 128.060 observacions de 28 variables diferents, que les presen
 * **Anàlisi:** En aquest segon script ens centrem en realitzar l'anàlisi de les dades prèviament seleccionades en l'script anterior. Començem seleccionant els grups de dades que es volen analitzar/comparar (planificació dels
 anàlisis a aplicar). Aquests anàlisis es basen en la comprovació de la normalitat i homogeneïtat de la variància i aplicació de proves estadístiques per comparar la semblança o diferència dels grups de dades. A partir dels resultats obtinguts, mitjançant les diverses proves d'anàlisi, representem els resultats a partir de taules i gràfiques.
 Finalment acabem concloent en l'apartat de conclusions on parlem sobre si els resultats ens ajuden o no a respondre al problema inicialment plantejat i comentaris relacionats.
-
 * **PRAC3_Aleix_Ignasi:** Aquest document incorpora les parts de *Preaparació* i *Anàlisi* en un únic document.
+
+## Llicència del dataset:
+
+Per poder emmagatzemar el dataset hem hagut de tenir en compte quina mena de llicència era la més apropiada pel nostre dataset.
+Tenint en compte que el nostre dataset ha estat extret a partir d’una pàgina web pública i els atributs que hem acabat extreient eren d’abast públic. En aquest sentit hem optat per la llicència **_Released Under CC BY-SA 4.0 License_**, ja que com hem comentat, partim d’unes dades obtingudes en una web púbilca i que estan a l’abast de qualsevol persona. Per tant permetem que es facin adaptacions del nostre dataset final i permetem que se’n facin usos comercials.
 
 ## Bibliografia:
 
