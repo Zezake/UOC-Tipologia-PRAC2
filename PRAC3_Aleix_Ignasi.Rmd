@@ -1,5 +1,5 @@
 ---
-title: 'Pràctica 3: Neteja i validació de dades'
+title: 'Pràctica 2: Neteja i validació de dades'
 author: "Aleix Martínez Bages i Ignasi Vilarasau Antolin"
 date: "10/6/2019"
 output: html_document
