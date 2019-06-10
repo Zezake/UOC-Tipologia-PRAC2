@@ -39,7 +39,7 @@ El dataset conté 128.060 observacions de 28 variables diferents, que les presen
 
 ## Fitxers de codi utilitzat per realitzar el projecte:
 
-* **Descripció:** 
+* **Preparació:** 
 * **Anàlisi:** 
 
 ## Bibliografia:
