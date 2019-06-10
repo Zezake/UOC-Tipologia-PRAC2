@@ -39,8 +39,10 @@ El dataset conté 128.060 observacions de 28 variables diferents, que les presen
 
 ## Fitxers de codi utilitzat per realitzar el projecte:
 
-* **Preparació:** 
-* **Anàlisi:** 
+* **Preparació:** En aquest primer script ens centrem en la fase de preprocessament de les dades. El que fem és assegurar la integració i selecció de les dades d’interès a analitzar posteriorment, mitjançant un procediment de neteja de les dades selectiu. Tractem les dades que contenen zeros, elements buits o valors inconsistents i identifiquem i tractem valors extrems.
+* **Anàlisi:** En aquest segon script ens centrem en realitzar l'anàlisi de les dades prèviament seleccionades en l'script anterior. Començem seleccionant els grups de dades que es volen analitzar/comparar (planificació dels
+anàlisis a aplicar). Aquests anàlisis es basen en la comprovació de la normalitat i homogeneïtat de la variància i aplicació de proves estadístiques per comparar la semblança o diferència dels grups de dades. A partir dels resultats obtinguts, mitjançant les diverses proves d'anàlisi, representem els resultats a partir de taules i gràfiques.
+Finalment acabem concloent en l'apartat de conclusions on parlem sobre si els resultats ens ajuden o no a respondre al problema inicialment plantejat i comentaris relacionats.
 
 ## Bibliografia:
 
