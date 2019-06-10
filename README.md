@@ -44,7 +44,7 @@ El dataset conté 128.060 observacions de 28 variables diferents, que les presen
 anàlisis a aplicar). Aquests anàlisis es basen en la comprovació de la normalitat i homogeneïtat de la variància i aplicació de proves estadístiques per comparar la semblança o diferència dels grups de dades. A partir dels resultats obtinguts, mitjançant les diverses proves d'anàlisi, representem els resultats a partir de taules i gràfiques.
 Finalment acabem concloent en l'apartat de conclusions on parlem sobre si els resultats ens ajuden o no a respondre al problema inicialment plantejat i comentaris relacionats.
 
-* **PRAC_Aleix_Ignasi:** Aquest document incorpora les parts de *Preaparació* i *Anàlisi* en un únic document.
+* **PRAC3_Aleix_Ignasi:** Aquest document incorpora les parts de *Preaparació* i *Anàlisi* en un únic document.
 
 ## Bibliografia:
 
