@@ -325,8 +325,18 @@ Un altre comentari a realitzar, és que el fet que hem tractat a tots els jugado
 ACABAR DE POSAR EL QUE CREGUEM CONVENIENT
 
 
-
-
+Finalment, afegim al document la taula de contribucions demanada:
+```{r}
+df<-data.frame("Investigacio Previa","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
+names(df)<-c("Contribuciones","Firma_1", "Firma_2")
+de<-data.frame("Redaccio de les respostes","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
+names(de)<-c("Contribuciones","Firma_1", "Firma_2")
+dr<-data.frame("Desenvolupament codi","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
+names(dr)<-c("Contribuciones","Firma_1", "Firma_2")
+newdf <- rbind(df, de)
+taula_de_contribucions <- rbind(newdf, dr)
+taula_de_contribucions
+```
 
 
 
