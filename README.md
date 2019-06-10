@@ -9,9 +9,9 @@ En concret en aquesta pràctica ens hem centrat en les fases de preprocessament 
 
 ## Descripció
 
-En aquest projecte treballarem sobre un conjunt de dades extret de Kaggle[^1] que conté informació relativa a tots els llençaments fets en partits de la NBA al llarg de la temporada 2014-2015. L'objectiu de l'estudi és determinar els factors que influencien l'encert del llençament, com la distància a la canasta o el temps de jocs. La finalitat és coneixer en quines situacions tenim més probabilitats d'anotar coneixer les característiques del moment.
+En aquest projecte treballarem sobre un conjunt de dades extret de _Kaggle_ que conté informació relativa a tots els llençaments fets en partits de la NBA al llarg de la temporada 2014-2015. L'objectiu de l'estudi és determinar els factors que influencien l'encert del llençament, com la distància a la canasta o el temps de jocs. La finalitat és coneixer en quines situacions tenim més probabilitats d'anotar coneixer les característiques del moment.
 
-[^1]:enllaç: https://www.kaggle.com/dansbecker/nba-shot-logs
+Enllaç: https://www.kaggle.com/dansbecker/nba-shot-logs
 
 El dataset conté 128.060 observacions de 28 variables diferents, que les presentem a continuació:
 
