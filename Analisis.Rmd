@@ -23,27 +23,29 @@ library(dplyr)
 
 # 4 Anàlisis de les dades
 
-El primer pas és importar el dataset netejat que hem preparat anteriorment:
+El primer pas és importar el dataset netejat que hem preparat anteriorment.
 ```{r}
 df<- read_csv("data_nba.csv")
 df$X1 <- NULL
+df$OT <- as.factor(df$OT)
 df$ATTACK_TYPE <- as.factor(df$ATTACK_TYPE)
 df$CLOSE_DEF_DIST_C <- factor(df$CLOSE_DEF_DIST_C, levels = c("C","M","F"))
 df$PTS_TYPE <- as.factor(df$PTS_TYPE)
+df$CLUTCH<- as.factor(df$CLUTCH)
 df$SHOT_RESULT <- as.factor(df$SHOT_RESULT)
 ```
 
 ## 4.1 L'efecte de la distància en el llençament
-Volem realitzar l'estudi de la semblança de les variables enfocat cap quines variables són les que més influirien en la possible predicció de si un tir X serà encistellar o no.
-
-El primer pas serà veure com afecta la distància de llençament en la precisió. El primer pas és calcular la pressisió tir per partit, segons la distància de llençament:
+Volem veure com afecta la distància de llençament en la precissió. El primer pas és calcular la pressisió tir per partit, segons la distància de llençament.
 ```{r}
 data_sdc <- df %>% group_by(GAME_ID, SHOT_DIST_C, SHOT_RESULT)
+
 df_sdc <- inner_join(data_sdc %>% filter(SHOT_RESULT == "made") %>% 
                        summarise(TR = n()),
                       data_sdc %>% filter(SHOT_RESULT == "missed") %>% 
                        summarise(TF = n()),
                       by = c("GAME_ID","SHOT_DIST_C"), copy = TRUE)
+
 df_sdc <- subset(df_sdc, select = -c(SHOT_RESULT.x, SHOT_RESULT.y))
 df_sdc$SHOT_DIST_C <- factor(df_sdc$SHOT_DIST_C, levels = c("C","M","F"))
 df_sdc$TI <- df_sdc$TR + df_sdc$TF
@@ -51,10 +53,11 @@ df_sdc$PRES <- 100*df_sdc$TR/df_sdc$TI
 ```
 
 ## 4.2 Visualització
-Visualitzem a continuació (mitjançant un boxplot i un histograma) la precisió en funció dels tres valors categòrics de l'atribut distància de llençament per veure a ull si hi pot haver una relació directa entre aquestes variables i poder veure també com aquestes estan distribuïdes:
+Visualitzem la precissió en funció de la distància de llençament per veure a ull si hi ha una relació entre aquestes variables i com aquestes es distribueixen.
 ```{r}
 ggplot(df_sdc, aes(x = SHOT_DIST_C, y = PRES ,fill = SHOT_DIST_C)) +
   geom_boxplot()+ggtitle("Precission by Shot Dist")
+
 ggplot(df_sdc,aes(x=PRES,group=SHOT_DIST_C, fill=SHOT_DIST_C))+
   geom_histogram(position="identity",
                  aes(y=..density..),
@@ -62,187 +65,67 @@ ggplot(df_sdc,aes(x=PRES,group=SHOT_DIST_C, fill=SHOT_DIST_C))+
                  binwidth = 5) + 
   xlab("% Encert")+ylab("Densitat")+ggtitle("Histogram SHOT_DIST_C BY PRECISION")
 ```
-Tant en el boxplot com en l'histograma veiem diferents distribucions per a la precisió de tir segons la distància de llençament. Per tant, podem veure que les distribucions en cap cas seran iguals i podem començar a pensar que l'atribut distància de tir, serà un dels atributs més influents.
-A més, a continuació podem veure els valors promig i la seva desviació:
-
+Tant en el boxplot com en l'histograma veiem diferents distribucions per a la precissió de tir segons la distància de llençament. A més, a continuació podem veure els valors promig i la seva desviació.
 ```{r echo = FALSE}
 mu <- plyr::ddply(df_sdc, "SHOT_DIST_C", summarise, pres.mean=mean(PRES), pres.sd =sd(PRES))
 mu
 ```
-Veiem que efectivament, tal i com esperàvem, pels tirs realitzats des de més a prop (SHOT_DIST_C = C), la precisió augmenta considerablement en comparació amb la resta de variables i la desviació estàndard també resulta ser molt més baixa en relació.
+
 
 ## 4.3 Comprovació normalitat.
-Ara ens centrarem en comparar la baixada de pressisió amb l'augment de la distància. Primer comprovarem si cada atribut segueix una distribució normal.
+Ens volem centrar en comparar baixada de pressisió amb l'augment de la distància. Primer comprovarem si cada atribut segueix una distribució normal.
 ### 4.3.1. Q-Q Plot
-Representem les variables en un Q-Q Plot per mirar d'identificar si tenen una distribució normals:
+Representem les variables en un Q-Q Plot per mirar d'identificar si tenen una distribució normals.
 ```{r}
 par(mfrow=c(1,3))
 qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"], main = "CLOSE")
 qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"])
+
 qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"], main = "MEDIUM")
 qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"])
+
 qqnorm(df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"], main = "FAR")
 qqline(df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"])
 ```
+
 Els Q-Q plots són prou satisfactòris com per confirmar la normalitat de les dades.
 
 ### 4.3.2 Test de Kolmogorov-Smirnov
-Per donar suport als Q-Q Plots realitzem la prova de Kolmogorov-Smirnov per determinar si les disteribucions obtingudes per a les diferents distàncies responen a una distribució normal:
+Per donar suport als Q-Q Plots realitzem la prova de Kolmogorov-Smirnov per determinar si les disteribucions obtingudes per a les diferents distàncies responen a una distribució normal.
 ```{r}
 ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"], y = "pnorm", alternative = "two.sided")
+
 ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "M"], y = "pnorm", alternative = "two.sided")
+
 ks.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"], y = "pnorm", alternative = "two.sided")
 ```
-Veient els valors del p-value i sense cap mena de dubte podem confirmar que que les distribucions de la pressissió en funció de la distància de tir és normal.
+Sense cap mena de dubte podem confirmar que que les distribucions de la pressissió en funció de la distància de tir és normal.
 
 ## 4.4 Comprovació Hipòtesis
- A continuació farem un t-test (donada la normalitat de les dades) per determinar si hi ha diferències en l'efectivitat de llençament segons la distància. La nostra hipòtesis nul·la és la no diferència entre els tirs llunyans i propers, i la hipòtesis alternativa és que a menor distància més facil és encistellar i major precissió. Demanem el resultat amb un nivell de confiança del 95%.
+ A continuació farem el t-test de Student's per determinar si hi ha diferències en l'efectivitat de llençament segons la distància. La nostra hipòtesis nul·la és la no diferència entre els tirs llunyants i propers, i la hipòtesis alternativa és que a menor distància més facil és acertar i major precissió. Demanem el resultat amb un nivell de confiança del 95%.
 ```{r}
 t.test(x = df_sdc$PRES[df_sdc$SHOT_DIST_C == "C"],
-            y = df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"], conf.level = 0.95)
-```
-Hem pogut veure que hem obtingut un p-value < 0.05, en aquest sentit, la hipòtesi nul·la queda descartada i veiem que les distribucions de la variable precisió varia en funció de si el llençament és proper o llunyà i podem veure que amb un valor p-value<<<0.5, serà una de les variables que més influirà en la possible predicció de si un tir X serà realitzat o no.
-
-# 2 Quines altres variables afecten el llençament:
-
-Un cop hem estudiat la variable SHOT_DIST_C enfocarem l'estudi cap a la variable "TOUCH_TIME".
-Primerament plotejarem el boxplot i els histogrames de la variable TOUCH_TIME en funció de si el tir ha estat encistellat o no, per veure a ull si les distribucions podrien arribar a ser semblants.
-```{r}
-ggplot(df, aes(x = SHOT_RESULT, y = TOUCH_TIME ,fill = SHOT_RESULT)) +
-  geom_boxplot()+ggtitle("Resultat del tir by Touch time")
-
-hist(df$TOUCH_TIME, freq = FALSE, col = "green")
-hist(df$TOUCH_TIME[df$SHOT_RESULT == "missed"], freq = FALSE, col = "blue")
-hist(df$TOUCH_TIME[df$SHOT_RESULT== "made"], freq = FALSE, col = "red")
-```
-Podem veure a simple vista mitjantçant el boxplot i els histogrames, que les distribucions tenen una forma força semblant, però no segueixen una distribució normal. 
-Anem ara a comprovar mitjançant un Q-Q plot com realment les distribucions no es corresponen a una normal:
-```{r}
-par(mfrow=c(1,2))
-qqnorm(df$TOUCH_TIME[df$SHOT_RESULT == "missed"], main = "MISSED")
-qqline(df$TOUCH_TIME[df$SHOT_RESULT == "missed"])
-qqnorm(df$TOUCH_TIME[df$SHOT_RESULT== "made"], main = "MADE")
-qqline(df$TOUCH_TIME[df$SHOT_RESULT== "made"])
-```
-Veiem com efectivament, les distribucions no es corresponen amb una distribució normal.
-
-D'aquesta forma, per poder comprovar les diferències entre la variable TOUCH_TIME en funció de si el tir és encistellat o no aplicarem un test de wilcoxon (mitjançant la suposició del teorema del límit central, ja que disposem d'una mostra d'instàncies suficientment gran):
-```{r}
-wilcox.test(x = df$TOUCH_TIME[df$SHOT_RESULT == "missed"],
-            y = df$TOUCH_TIME[df$SHOT_RESULT== "made"], alternative = "less", conf.level = 0.95)
-
-mu1 <- plyr::ddply(df, "SHOT_RESULT", summarise, touch.mean=mean(TOUCH_TIME), touch.sd =sd(TOUCH_TIME))
-mu1
-```
-Veiem doncs que finalment amb un valor p-value <<< 0.5  i veiem que les dues distribucions segueixen un comportament força diferent, però si ens fixem amb els valors de les mitjanes i la desviació estàndard veiem que les dues distribucions haurien de ser força iguals. 
-Aquesta discrepància podria venir donada per la diferenciació en els valors extrems de les dues poblacions mostrals tal i com hem pogut veure en els Q-Q plots i en els boxplot i histogrames. Per tant, veiem que aquesta variable no serà una de les que més ens podran influir en si un tir podrà acabar sent encistellat o no. 
-A més a més, caldria comentar, que aquest resultat podia ser d'esperar, ja que el temps de possessió de la pilota d'un jugador de l'equip, no hauria de ser un atribut molt influent en la qualitat del seu tir posterior. Per tant, cada cop estem veient que les variables que més podran acabar influint són les que es centren únicament en el moment del tir i no en instants anteriors.
-
-#CLUTCH:
-Seguidament, estudiarem la possible relació entre la precisió dels tirs i l'atribut CLUTCH. Aquest atribut el calcularem mitjançant la suma de tirs en moments CLUTCH que hi ha hagut durant el partit en cada una de les 3 distàncies de llençament C, M, F.
-Crearem un subdataset on poder estudiar aquesta variable en funció del la distància mitjana dels 3 tipus de distància de tirs de cada partit i en funció de la precisió.
-```{r}
-data_sdc <- df %>% group_by(GAME_ID, SHOT_DIST_C, SHOT_RESULT)
-df_sdc <- inner_join(data_sdc %>% filter(SHOT_RESULT == "made") %>% 
-                       summarise(TR = n(), Dist_R = mean(SHOT_DIST),
-                                                               Def_R = mean(CLOSE_DEF_DIST)),
-                      data_sdc %>% filter(SHOT_RESULT == "missed") %>% 
-                       summarise(TF = n(), Dist_F = mean(SHOT_DIST),
-                                                               Def_F = mean(CLOSE_DEF_DIST)),
-                      by = c("GAME_ID", "SHOT_DIST_C"), copy = TRUE)
-
-df_sdc <- inner_join(df_sdc,
-                     data_sdc %>% summarize(CLUTCH=sum(CLUTCH)))
-
-df_sdc <- subset(df_sdc, select = -c(SHOT_RESULT.x, SHOT_RESULT.y))
-df_sdc$SHOT_DIST_C <- factor(df_sdc$SHOT_DIST_C, levels = c("C","M","F"))
-df_sdc$TI <- df_sdc$TR + df_sdc$TF
-df_sdc$PRES <- 100*df_sdc$TR/df_sdc$TI
+            y = df_sdc$PRES[df_sdc$SHOT_DIST_C == "F"],
+            alternative = "less",
+            conf.level = 0.95)
 ```
 
-Començarem plotejant els histogrames de la variable CLUTCH en funció de la precisió:
-```{r}
-hist(df_sdc$PRES, freq = FALSE, col = "green")
-hist(df_sdc$PRES[df_sdc$CLUTCH==0], freq = FALSE, col = "blue")
-hist(df_sdc$PRES[df_sdc$CLUTCH>0], freq = FALSE, col = "orange")
-```
-Veiem que els histogrames ens indiquen que aquesta variable segueix una distribució normal i que tant la distribució pel cas Precisió(CLUTCH) i pel cas Precisió(NO CLUTCH) són bastant semblants.
-
-Anem a comprovar aquesta suposada normalitat mitjançant un Q-Q Plot:
-```{r}
-qqnorm(df_sdc$PRES[df_sdc$CLUTCH>0], main = "CLUTCH")
-qqline(df_sdc$PRES[df_sdc$CLUTCH >0])
-qqnorm(df_sdc$PRES[df_sdc$CLUTCH==0], main = "NO CLUTCH")
-qqline(df_sdc$PRES[df_sdc$CLUTCH==0])
-```
-Els Q-Q plots són prou satisfactòris com per confirmar la normalitat de les dades.
-
-Per donar suport als Q-Q Plots realitzem la prova de Kolmogorov-Smirnov per determinar si les disteribucions obtingudes per a les diferents distàncies responen a una distribució normal:
-```{r}
-ks.test(x = df_sdc$PRES[df_sdc$CLUTCH>0], y = "pnorm", alternative = "two.sided")
-ks.test(x = df_sdc$PRES[df_sdc$CLUTCH==0], y = "pnorm", alternative = "two.sided")
-```
-Veient els valors del p-value i sense cap mena de dubte podem confirmar que que les distribucions de la pressissió en funció de la distància de tir és normal.
-
-A continuació representarem els boxplots de la variable PRES en funció dels moments CLUTCH.
-```{r}
-ggplot(df_sdc, aes(x = CLUTCH, y = PRES ,fill = CLUTCH, group=CLUTCH)) +
-  geom_boxplot()+ggtitle("Presicion dels tirs vs moment clutch de tirs")
-```
-Podem veure com les 6 distribucions plotejades tenen una forma bastant semblant i podem apreciar a simple vista, que no existeix una diferència de comportament entre la precisió en els moments clutch i els moments no clutch.
-
-Finalment, mitjançant un t test anem a comprovar la semblança entre les distribucions de les variables PRES(NO CLUTCH) i PRES(CLUTCH):
-```{r}
-t.test(x = df_sdc$PRES[df_sdc$CLUTCH==0], y = df_sdc$PRES[df_sdc$CLUTCH >0])
-
-mean(df_sdc$PRES[df_sdc$CLUTCH==0])
-sd(df_sdc$PRES[df_sdc$CLUTCH==0])
-mean(df_sdc$PRES[df_sdc$CLUTCH >0])
-sd(df_sdc$PRES[df_sdc$CLUTCH >0])
-```
-Veiem doncs que les dues distribucions tenen un comportament molt similar i podem afirmar que la variable clutch no jugarà un paper massa important en la predicció d'encistellament del tir.
-Aquest fet corrobora la idea de que, tenint en compte que estem tractant amb professionals de la NBA, el moment previ al tir, o la pressió que envolta el moment del tir (CLUTCH) no els influeix massa en el simple fet d'encistellar o no.
-
-Finalment, per acabar de comprovar si la variable CLUTCH juga un paper força secundari, comprovarem si la distància promig dels tirs (tant si són encistellats (DIST_R) o no encistellats (DIST_F)) influeix o no si es tracta d'un moment de pressió:
-```{r}
-"DIST_R:"
-wilcox.test(x = df_sdc$Dist_R[df_sdc$CLUTCH>0], y = df_sdc$Dist_R[df_sdc$CLUTCH==0])
-median(df_sdc$Dist_R[df_sdc$CLUTCH>0])
-sd(df_sdc$Dist_R[df_sdc$CLUTCH>0])
-median(df_sdc$Dist_R[df_sdc$CLUTCH==0])
-sd(df_sdc$Dist_R[df_sdc$CLUTCH==0])
-
-"DIST_F:"
-wilcox.test(x = df_sdc$Dist_F[df_sdc$CLUTCH>0], y = df_sdc$Dist_F[df_sdc$CLUTCH==0])
-median(df_sdc$Dist_F[df_sdc$CLUTCH>0])
-sd(df_sdc$Dist_F[df_sdc$CLUTCH>0])
-median(df_sdc$Dist_F[df_sdc$CLUTCH==0])
-sd(df_sdc$Dist_F[df_sdc$CLUTCH==0])
-```
-Veiem doncs com el resultat del p-value ens indica que la hipòtesi nul·la no pot ser rebutjada, i per tant, veiem que les distribucions de precisió en els moments clutch i els moments no clutch és semblant.
-Per tant, podem descartar finalment la variable CLUTCH com una variable influent en la predicció de llençament i ens centrarem en les variables físiques que influeixen en el precís moment del tir: SHOT_DIST i CLOSE_DEF_DIST.
-
-
-# 3 Predicció llençament:
-Un cop hem investigat les possibles variables que poden influir en la predicció del llençament, anem a generar un model per predir l'encert o no encert del llençament.
-
-Començarem creant una variable definida per la tangent hiperbòlica de les variables SHOT_DIST i CLOSE_DEF_DIST (les dues variables que influeixen en el moment físic del tir):
+# 2 Quines altres variables afecten el llençament
 ```{r}
 c_shoot <- atanh(0.5)/7
 c_def <- atanh(0.5)/1.5
 df$DIFFICULTY <- 0.5*(tanh(c_shoot*df$SHOT_DIST)+1 - tanh(c_def*df$CLOSE_DEF_DIST))
 ```
 
-## 3.1 Creació del models:
-Començarem per crear un model molt senzill del que anirem augmentant la complexitat.
 
-En els models que anirem creant, les variables que intervindran són la distància de llençament, la distància al defensor més proper i el tipus d'atac.
+# 3 Predicció llençament
+Volem generar un modelpredir si l'encert del llençament.
 
-### Relevel Variables:
+## 3.1 Creació del models
+En aquest model intervindrà la distància de llençament, la distància al defensor més proper, si és o no és un moment de pressió (*CLUTCH*) o el tipus d'atac.
+
+### Relevel Variables
 ```{r}
-df$CLUTCH <- as.factor(df$CLUTCH)
-df$OT <- as.factor(df$OT)
-
 df$CLUTCH_C <- relevel(df$CLUTCH, ref = "0")
 df$ATTACK_TYPE_C <- relevel(df$ATTACK_TYPE, ref = "Long")
 df$LOCATION_C <- relevel(as.factor(df$LOCATION), ref = "A")
@@ -251,40 +134,39 @@ df$SHOT_DIST_C_C <- relevel(as.factor(df$SHOT_DIST_C), ref = "C")
 df$OT_C <- relevel(df$OT, ref = "0")
 ```
 
-### 3.1.1 Model 1:
-Començem pel model 1 on únicament tenim en compte la distància del tir:
+### 3.1.1 Model 1
 ```{r}
 model_1 <- glm(SHOT_RESULT ~ SHOT_DIST,
             data = df,
             family = "binomial")
 ```
 
-### 3.1.2 Model 2:
-Seguim pel model 2 on tenim en compte l'atribut dificultat (creat anteriorment mitjançant la tangent hiperbòlica de les variables distància tir i defensor):
+### 3.1.2 Model 2
 ```{r}
 model_2 <- glm(SHOT_RESULT ~ DIFFICULTY,
             data = df,
             family = "binomial")
 ```
 
-### 3.1.3 Model 3:
-Finalitzem l'estudi de models creant el model 3 on intervenen, la distància del tir i del defensor i el tipus d'atac:
+### 3.1.3 Model 3
 ```{r}
-model_3 <- glm(SHOT_RESULT ~ SHOT_DIST + CLOSE_DEF_DIST + TOUCH_TIME + ATTACK_TYPE_C,
+model_3 <- glm(SHOT_RESULT ~ SHOT_DIST + TOUCH_TIME + CLUTCH_C + ATTACK_TYPE_C + PERIOD ,
             data = df,
             family = "binomial")
 ```
 
-## 3.2 Prediccions models:
-Creem unes variables predictives de l'atribut SHOT_RESULT en funció dels 3 models creats:
+## 3.2 Prediccions models
 ```{r}
 df$SHOT_RESULT_pred_1 <- predict.glm(model_1, df, type = "response")
 df$SHOT_RESULT_pred_2 <- predict.glm(model_2, df, type = "response")
 df$SHOT_RESULT_pred_3 <- predict.glm(model_3, df, type = "response")
 ```
 
-## 3.3 Anàlisi models:
-Creem la corba ROC dels 3 models per veure la seva efectivitat:
+```{r}
+summary(model_2)
+```
+
+## 3.3 Analisi models
 ```{r}
 library(pROC)
 roc_1 <- roc(response = df$SHOT_RESULT, 
@@ -293,50 +175,26 @@ roc_2 <- roc(response = df$SHOT_RESULT,
                 predictor = df$SHOT_RESULT_pred_2, plot = FALSE)
 roc_3 <- roc(response = df$SHOT_RESULT, 
                 predictor = df$SHOT_RESULT_pred_3, plot = FALSE)
+
 ```
-I finalment plotejem les corbes ROC dels 3 models en un mateix gràfic per fer més senzilla la comparació d'efectivitat:
+
 ```{r}
 plot(roc_1, add = FALSE, col = 'red',
      asp = .5, xlim = c(1,0),  ylim = c(0,1),
      print.auc = TRUE, print.auc.x = 0.2, print.auc.y = 0.5)
 legend(x = 0.30, y = 0.65, legend = 'Model 1',
        col = 'red', lty = 1, bty = 'n')
+
 plot(roc_2, add = TRUE, col = 'blue',
      asp = .5, xlim = c(1,0),  ylim = c(0,1),
      print.auc = TRUE, print.auc.x = 0.2, print.auc.y = 0.3)
 legend(x = 0.30, y = 0.45, legend = 'Model 2',
        col = 'blue', lty = 1, bty = 'n')
+
 plot(roc_3, add = TRUE, col = 'green',
      asp = .5, xlim = c(1,0),  ylim = c(0,1),
      print.auc = TRUE, print.auc.x = 0.2, print.auc.y = 0.1)
 legend(x = 0.30, y = 0.25, legend = 'Model 3',
        col = 'green', lty = 1, bty = 'n')
 ```
-PENDING COMENTARIS GRÀFIC EN FUNCIÓ DE SI FINALMENT INTENTEM FER TRAINING SET I TEST SET O HO DEIXEM AIXÍ.
-JEJE
-
-#Conclusions:
-
-Els resultats obtinguts amb el general linear model ens han indicat que les dues variables que més influeixen en la predicció d'encert o no d'un tir són la distància a la que es troba el defensor més proper i la distància a la que s'està realitzant el tir.
-
-Gràcies a aquests resultats hem pogut acabar concloent que, tal i com havíem comentat prèviament estem tractant amb els llençaments realitzats per jugadors professionals entrenats per a que les condicions exteriors i condicions prèvies als moments de tir no els influeixin.
-Un altre comentari a realitzar, és que el fet que hem tractat a tots els jugadors per igual, sense tenir en compte les grans estrelles de la NBA que la seva precisió és molt superior ja que tiren molts més tirs que un altre jugador que no és una estrella.
-
-ACABAR DE POSAR EL QUE CREGUEM CONVENIENT
-
-
-Finalment, afegim al document la taula de contribucions demanada:
-```{r}
-df<-data.frame("Investigacio Previa","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
-names(df)<-c("Contribuciones","Firma_1", "Firma_2")
-de<-data.frame("Redaccio de les respostes","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
-names(de)<-c("Contribuciones","Firma_1", "Firma_2")
-dr<-data.frame("Desenvolupament codi","Aleix Martinez Bages","Ignasi Vilarasau Antolin")
-names(dr)<-c("Contribuciones","Firma_1", "Firma_2")
-newdf <- rbind(df, de)
-taula_de_contribucions <- rbind(newdf, dr)
-taula_de_contribucions
-```
-
-
 
