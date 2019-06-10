@@ -10,16 +10,16 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # 1 Descripció del Dataset
-En aquest projecte treballarem sobre un conjunt de dades extret de Kaggle[^1] que conté informació relativa a tots els llençaments fets en partits de la NBA al llarg de la temporada 2014-2015. L'objectiu de l'estudi és determinar els factors que influencien l'encert del llençament, com la distància a la canasta o el temps de jocs. La finalitat és coneixer en quines situacions tenim més probabilitats d'anotar coneixer les característiques del moment.
+En aquest projecte treballarem sobre un conjunt de dades extret de Kaggle[^1] que conté informació relativa a tots els llençaments fets en partits de la NBA al llarg de la temporada 2014-2015. L'objectiu de l'estudi és determinar els factors que influencien l'encert del llençament, com la distància a la canasta o el temps de jocs. La finalitat és coneixer en quines situacions tenim més probabilitats d'anotar coneixent les característiques del moment.
 
 [^1]:enllaç: https://www.kaggle.com/dansbecker/nba-shot-logs
 
-El dataset conté 128.060 observacions de 28 variables diferents, que les presentem a continuació:
+El dataset conté 128.060 observacions de 28 variables diferents que presentem a continuació:
 
   * **GAME_ID**: Identificador del partit
   * **MATCHUP**: Data del partit i noms dels equips local vs visitant
-  * **LOCATION**: ¿Si es va jugar a casa o fora? A = away, H = home
-  * **W**: Si l'equip local guanya o perd, W = win, L = lose
+  * **LOCATION**: Si es va jugar a casa o fora; A = away, H = home
+  * **W**: Si l'equip local guanya o perd; W = win, L = lose
   * **FINAL_MARGIN**: Diferència de punts del resultat final.
   * **SHOT_NUMBER**: Quants llençaments portava el moment de fer l'acció.
   * **PERIOD**: Periode del partit en el que s'efectua el llençament.
@@ -28,15 +28,15 @@ El dataset conté 128.060 observacions de 28 variables diferents, que les presen
   * **DRIBBLES**: Dribblings fets pel jugador amb la pilota
   * **TOUCH_TIME**: Temps que el jugador ha tingut la pilota a les mans
   * **SHOT_DIST**: Distància desde la qual llença el jugador
-  * **PTS_TYPE**: Tipo de llençament si de 2 o 3 punts (triple)
+  * **PTS_TYPE**: Tipus de llençament si de 2 o 3 punts (triple)
   * **SHOT_RESULT**: Si ha encertat (made) o fallat (missed) el llençament 
   * **CLOSEST_DEFENDER**: Nom del defensor més proper
   * **CLOSEST_DEFENDER_PLAYER_ID**: Id del defensor més proper
   * **CLOSE_DEF_DIST**: Distància amb el defensa més proper
-  * **FGM**: Variable binària (0,1) indicant si ha encertat o falltat el tir
+  * **FGM**: Variable binària (0,1) indicant si ha encertat o fallat el tir
   * **PTS**: Punts aconseguits amb el llençament
   * **player_name**: Nom del jugador que efectua el tir
-  * **player_id:** ID del jugador que efectua el tir
+  * **player_id**: ID del jugador que efectua el tir
  
 
 
@@ -225,7 +225,7 @@ ggplot(df_sdc,aes(x=PRES,group=SHOT_DIST_C, fill=SHOT_DIST_C))+
 Tant en el boxplot com en l'histograma veiem diferents distribucions per a la precisió de tir segons la distància de llençament. Per tant, podem veure que les distribucions en cap cas seran iguals i podem començar a pensar que l'atribut distància de tir, serà un dels atributs més influents.
 A més, a continuació podem veure els valors promig i la seva desviació:
 
-```{r echo = FALSE}
+```{r}
 mu <- plyr::ddply(df_sdc, "SHOT_DIST_C", summarise, pres.mean=mean(PRES), pres.sd =sd(PRES))
 mu
 ```
@@ -429,7 +429,7 @@ ggplot(df_sdc,aes(x=PRES,group=CLOSE_DEF_DIST_C, fill=CLOSE_DEF_DIST_C))+
 Tant en el boxplot com en l'histograma veiem diferents distribucions per a la precisió de tir segons la distància del defensor en el moment del llençament. Per tant, podem veure que les distribucions en cap cas seran iguals i podem començar a pensar que l'atribut distància de tir, serà un dels atributs més influents.
 A més, a continuació podem veure els valors promig i la seva desviació:
 
-```{r echo = FALSE}
+```{r}
 mu <- plyr::ddply(df_sdc, "CLOSE_DEF_DIST_C", summarise, pres.mean=mean(PRES), pres.sd =sd(PRES))
 mu
 ```
@@ -638,11 +638,11 @@ Gràcies als gràfics de les corbes ROC i el valor del AUC podem determinar que 
 
 #Conclusions:
 
-L'objectiu de l'analísis d'aquest conjunt de dades tenia la finalitat de determinar aquells atributs que més influencien el llençament. El primer fet observat ha estat la importancia de la distància a canasta, observem una baixada important de la precissió quan passem de distancies curtes a llargues. De la mateixa manera, i com és lògic, trobem que quan més lluny es troba el defensor més fàcil és anotar. També hem trobat com el temps de possessió previ al llençament, la durada de l'atac o si ens trobem en un moment de pressió (CLUTCH) tots ells afecten amb més o menys mesura a la capacitat anotadora del tirador.
+L'objectiu de l'anàlisi d'aquest conjunt de dades tenia la finalitat de determinar aquells atributs que més influencien el llençament. El primer fet observat ha estat la importància de la distància a canasta, observem una baixada important de la precisió quan passem de distàncies curtes a llargues. De la mateixa manera, i com és lògic, trobem que quan més lluny es troba el defensor més fàcil és anotar. També hem trobat com el temps de possessió previ al llençament, la durada de l'atac o si ens trobem en un moment de pressió (CLUTCH) tots ells afecten amb més o menys mesura a la capacitat anotadora del tirador. En aquest sentit, hem vist que els atributs que més afectaven a la possible predicció eren els que únicament estaven relacionats amb el moment de tir en sí (SHOT_DIST i CLOSE_DEF_DIST). Aquest fet podria arribar a explicar-se tenint en compte que estem tractant amb jugadors professionals entrenats per a que les condicions exteriors i condicions prèvies als moments de tir els influeixin el menys possible.
 
-Finalment hem aplicat tots aquest coneixements en diferents models per establir una comparativa entre d'ells. EL primer de tots i el més senzill només té en compte la distància de tir i ens demostra que és l'atribut més important.  Seguidament provem un model categòric on incorporem les variables categòriques de la distància de llençament i distància del defensor. És sorprenent veure com la diferència en la AUC del primer i segon model difereixen tant poc. L'últim model és el més complex i aquell que incorpora les variables estudiades en aquest projecte i presenta una AUC lleugerament superior als anteriors models.
+Durant la realització dels models de predicció hem aplicat tots els coneixements previs comentats. El primer de tots els models i el més senzill únicament té en compte la distància de tir i ens demostra que és l'atribut més important. Seguidament provem un model categòric on incorporem les variables categòriques de la distància de llençament i distància del defensor. És sorprenent veure com la diferència en la AUC del primer i segon model difereixen tant poc. L'últim model és el més complex i aquell que incorpora les variables estudiades en aquest projecte i presenta una AUC lleugerament superior als anteriors models.
 
-Concoloem aquest treball com que fa falta un estudi més profund del dataset per trobar noves variables que puguin ajudar a la predicció. Potser s'han de tenir en compte atributs corresponents als jugadors ja sigui a quina posició juguen o mesures físiques com l'alçada o l'edat. Queda pendent per un analísis posterior tenir en compte aquests altres atributs així com algún que valori la dificultat del llençament. Tot i això estem contents amb els resultats i conclusions obtingudes.
+Concoloem aquest treball considerant que faltaria un estudi molt més profund del dataset per trobar noves variables que puguin ajudar a la predicció. Potser s'haurien de tenir en compte atributs corresponents als jugadors ja sigui a quina posició juguen o mesures físiques com l'alçada o l'edat. Queda pendent per un anàlisi posterior tenir en compte aquests altres atributs així com algun que valori la dificultat intrínseca del llençament. Tot i això estem contents amb els resultats i conclusions obtingudes.
 
 # 5 Taula Contribucions
 Finalment, afegim al document la taula de contribucions demanada:
