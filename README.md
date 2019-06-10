@@ -5,7 +5,7 @@
 ## Context
 
 La realització d'aquesta pràctica s'ha dut a terme en el context de l'assignatura _Tipologia i cicle de vida de les dades_ del Màster de _Data Science_ de la _Universitat Oberta de Catalunya (UOC)_.
-En concret en aquesta pràctica ens hem centrat en les fases de preprocessament de les dades i anàlisi, mitjançant el llenguatge R. 
+En concret en aquesta pràctica ens hem centrat en les fases de preprocessament de les dades, anàlisi i visualització, mitjançant el llenguatge R. 
 
 ## Descripció
 
